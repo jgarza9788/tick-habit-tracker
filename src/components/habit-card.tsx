@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CheckIcon, FlameIcon, Trash2Icon } from "lucide-react"
+import { CheckIcon, FlameIcon, PencilIcon, Trash2Icon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,10 +19,11 @@ type Props = {
   slide: Slide
   leaving: boolean
   onToggle: (habit: Habit, key: string, done: boolean, origin: { x: number; y: number }) => void
+  onRename: (habit: Habit) => void
   onDelete: (habit: Habit) => void
 }
 
-export function HabitCard({ habit, days, today, index, slide, leaving, onToggle, onDelete }: Props) {
+export function HabitCard({ habit, days, today, index, slide, leaving, onToggle, onRename, onDelete }: Props) {
   const todayKey = fmt(today)
   const s = streak(habit, today)
   const tier = tierFor(s)
@@ -60,7 +61,10 @@ export function HabitCard({ habit, days, today, index, slide, leaving, onToggle,
                   </Badge>
                 )}
               </CardTitle>
-              <CardAction>
+              <CardAction className="flex items-center">
+                <Button variant="ghost" size="icon" aria-label={`Rename ${habit.name}`} onClick={() => onRename(habit)}>
+                  <PencilIcon />
+                </Button>
                 <Button variant="ghost" size="icon" aria-label={`Delete ${habit.name}`} onClick={() => onDelete(habit)}>
                   <Trash2Icon />
                 </Button>

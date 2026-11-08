@@ -58,6 +58,9 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
   const [view, setView] = useState<View>("today")
   const [adding, setAdding] = useState(false)
   const [deleting, setDeleting] = useState<Habit | null>(null)
+  // `editing` stays set while the dialog animates closed; `editOpen` controls visibility.
+  const [editing, setEditing] = useState<Habit | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
   const load = useCallback(() => {
     setLoadError(false)
@@ -118,6 +121,15 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
       .create(name, fmt(today))
       .then((h) => setHabits((hs) => [...(hs ?? []), h]))
       .catch((e: Error) => toast.error("Couldn't add habit", { description: e.message }))
+
+  const rename = (h: Habit, name: string) => {
+    if (name === (h.emoji ? `${h.emoji} ${h.name}` : h.name).trim()) return // unchanged
+    setHabits((hs) => hs?.map((x) => (x.id === h.id ? { ...x, name, emoji: "" } : x)) ?? null) // optimistic
+    api.rename(h.id, name).catch((e: Error) => {
+      toast.error("Couldn't rename habit", { description: e.message })
+      load()
+    })
+  }
 
   // Collapse the card first, then drop it from state once the animation has finished.
   const remove = (h: Habit) => {
@@ -256,7 +268,7 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
 
               <div className="flex flex-col">
                 {habits.map((h, i) => (
-                  <HabitCard key={h.id} habit={h} days={days} today={today} index={i} slide={slide} leaving={leaving === h.id} onToggle={toggle} onDelete={setDeleting} />
+                  <HabitCard key={h.id} habit={h} days={days} today={today} index={i} slide={slide} leaving={leaving === h.id} onToggle={toggle} onRename={(x) => { setEditing(x); setEditOpen(true) }} onDelete={setDeleting} />
                 ))}
               </div>
             </section>
@@ -270,7 +282,14 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
         </>
       )}
 
-      <AddHabitDialog open={adding} onOpenChange={setAdding} onAdd={add} />
+      <AddHabitDialog open={adding} onOpenChange={setAdding} onSubmit={add} />
+      <AddHabitDialog
+        mode="rename"
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        initial={editing ? (editing.emoji ? `${editing.emoji} ${editing.name}` : editing.name) : ""}
+        onSubmit={(name) => editing && rename(editing, name)}
+      />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>

@@ -22,6 +22,7 @@ export type AuthStatus = { needsSetup: boolean; authenticated: boolean; username
 export const api = {
   list: () => request<{ habits: Habit[] }>("GET", "/api/habits").then((r) => r.habits),
   create: (name: string, createdAt: string) => request<Habit>("POST", "/api/habits", { name, createdAt }),
+  rename: (id: string, name: string) => request<Habit>("PATCH", `/api/habits/${id}`, { name, emoji: "" }),
   remove: (id: string) => request<void>("DELETE", `/api/habits/${id}`),
   setDay: (id: string, date: string, done: boolean) =>
     request<Habit>("PUT", `/api/habits/${id}/days/${date}`, { done }),

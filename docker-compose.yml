@@ -1,6 +1,6 @@
 services:
   tick:
-    image: ghcr.io/jgarza9788/tick-habit-tracker:0.1.1
+    image: ghcr.io/jgarza9788/tick-habit-tracker:0.2.0
     # To build from source instead, comment out "image" above and use:
     # build: .
     ports:

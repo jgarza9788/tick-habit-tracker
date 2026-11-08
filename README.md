@@ -80,6 +80,7 @@ Data is stored in `.\data\habits.json` (change with `-DataDir`).
 - **Move through time:** the arrows next to the week label page back and forward.
 - **Dashboard:** today's progress, streaks, completion rate, the activity heatmap and per-habit weekly bars. On phones it's the second tab.
 - **Theme and color:** the moon button toggles light/dark, the palette button changes the accent color.
+- **Rename a habit:** the pencil icon on its card. Ticks and streaks are kept.
 - **Delete a habit:** the trash icon on its card.
 
 ## Streak celebrations
