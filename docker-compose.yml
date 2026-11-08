@@ -1,10 +1,15 @@
 services:
   tick:
-    build: .
+    image: ghcr.io/jgarza9788/tick-habit-tracker:0.1.0
+    # To build from source instead, comment out "image" above and use:
+    # build: .
     ports:
       - "3000:3000"
     volumes:
-      - tick-data:/data
+      # TICK_DATA picks where data lives. Defaults to the named volume "tick-data".
+      # Set it to a host path for a bind mount, e.g. TICK_DATA=./data
+      # (via shell env or a .env file next to this file).
+      - ${TICK_DATA:-tick-data}:/data
     restart: unless-stopped
     # Optional: create the account at startup instead of on first visit.
     # environment:
