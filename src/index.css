@@ -6,6 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    /* 10% longer than Tailwind's 150ms default, so every transition-* is a touch slower/smoother. */
+    --default-transition-duration: 165ms;
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
@@ -128,3 +130,144 @@
     @apply font-sans;
     }
 }
+/* Tick brand: green accent on soft neutral surfaces. */
+:root {
+    --primary: oklch(0.62 0.17 150);
+    --primary-foreground: oklch(0.99 0 0);
+    --ring: oklch(0.62 0.17 150);
+    --background: oklch(0.975 0.003 150);
+    --chart-1: oklch(0.62 0.17 150);
+    --radius: 1rem;
+}
+.dark {
+    --primary: oklch(0.74 0.18 150);
+    --primary-foreground: oklch(0.16 0.03 150);
+    --ring: oklch(0.74 0.18 150);
+    --background: oklch(0.14 0.008 150);
+    --card: oklch(0.19 0.01 150);
+    --chart-1: oklch(0.74 0.18 150);
+}
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { min-height: 100svh; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --default-transition-duration: 0ms; }
+}
+
+/* ---- Motion: spring easings (sampled from real spring physics) ---- */
+:root {
+  /* damping 1.0: smooth settle, no overshoot - default for UI that wasn't thrown */
+  --ease-spring: linear(0, 0.0265, 0.0902, 0.1734, 0.2642, 0.3554, 0.4422, 0.5221, 0.594, 0.6575, 0.7127, 0.7603, 0.8009, 0.8352, 0.8641, 0.8883, 0.9084, 0.9251, 0.9389, 0.9503, 0.9596, 0.9672, 0.9734, 0.9785, 0.9826, 0.986, 0.9887, 0.9909, 0.9927, 0.9941, 0.9953, 0.9962, 0.997, 0.9976, 0.9981, 0.9985, 1);
+  /* damping ~0.6: small overshoot - taps/pops that carry a little momentum */
+  --ease-bounce: linear(0, 0.0411, 0.144, 0.2817, 0.4329, 0.5816, 0.7171, 0.833, 0.9262, 0.9966, 1.0456, 1.076, 1.0912, 1.0947, 1.0897, 1.0794, 1.066, 1.0516, 1.0377, 1.0251, 1.0144, 1.0059, 0.9995, 0.9951, 0.9925, 0.9912, 0.9911, 0.9916, 0.9927, 0.9939, 0.9953, 0.9966, 0.9978, 0.9988, 0.9995, 1.0001, 1);
+}
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes pane-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes slide-next { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+@keyframes slide-prev { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: none; } }
+@keyframes tick-pop { from { opacity: 0; transform: scale(.2) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes circle-pop { from { transform: scale(.82); } to { transform: none; } }
+@keyframes fade-only { from { opacity: 0; } to { opacity: 1; } }
+
+.rise-in { animation: rise-in 620ms var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 55ms); }
+.pane-in { animation: pane-in 520ms var(--ease-spring) both; }
+.slide-next { animation: slide-next 520ms var(--ease-spring) both; }
+.slide-prev { animation: slide-prev 520ms var(--ease-spring) both; }
+.tick-pop { animation: tick-pop 560ms var(--ease-bounce) both; }
+.circle-pop { animation: circle-pop 520ms var(--ease-bounce) both; }
+
+/* Press: respond instantly on pointer-down, spring back on release. */
+.press { transition: transform 520ms var(--ease-bounce); }
+.press:active:not(:disabled) { transform: scale(.9); transition-duration: 80ms; transition-timing-function: ease-out; }
+
+/* Collapse a row out of a list (grid-rows trick animates to height 0). */
+.row-collapse { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 420ms var(--ease-spring), opacity 260ms ease-out; }
+.row-collapse[data-leaving="true"] { grid-template-rows: 0fr; opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in, .pane-in, .slide-next, .slide-prev, .tick-pop, .circle-pop { animation: fade-only 200ms ease-out both; animation-delay: 0ms; }
+  .press, .row-collapse { transition-duration: .01ms !important; }
+  [data-slot="progress-indicator"] { transition: none !important; }
+}
+
+/* ---- Streak tiers: spark < warm < hot < blaze < legend ---- */
+.streak-badge {
+  --flame: oklch(0.62 0.19 45);
+  color: var(--flame);
+  background: color-mix(in oklch, var(--flame) 14%, transparent);
+  border-color: color-mix(in oklch, var(--flame) 28%, transparent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dark .streak-badge { --flame: oklch(0.78 0.17 60); }
+.streak-badge[data-tier="spark"] { --flame: oklch(0.6 0.04 70); }
+.streak-badge[data-tier="hot"] {
+  background: linear-gradient(135deg, color-mix(in oklch, oklch(0.82 0.17 85) 32%, transparent), color-mix(in oklch, oklch(0.66 0.21 40) 32%, transparent));
+}
+.streak-badge[data-tier="blaze"] {
+  --flame: oklch(0.6 0.24 28);
+  background: linear-gradient(135deg, color-mix(in oklch, oklch(0.75 0.18 60) 30%, transparent), color-mix(in oklch, oklch(0.6 0.24 25) 36%, transparent));
+}
+.dark .streak-badge[data-tier="blaze"] { --flame: oklch(0.72 0.2 35); }
+.streak-badge[data-tier="legend"] {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(110deg, #f6c453, #ff6ba8, #8b7bff, #f6c453);
+  background-size: 300% 100%;
+  animation: shimmer 3.2s linear infinite;
+}
+.streak-badge svg { transform-origin: 50% 90%; }
+.streak-badge[data-tier="warm"] svg { animation: flicker 2s ease-in-out infinite; }
+.streak-badge[data-tier="hot"] svg { animation: flicker 1.5s ease-in-out infinite; }
+.streak-badge[data-tier="blaze"] svg, .streak-badge[data-tier="legend"] svg { animation: flicker 1.1s ease-in-out infinite; }
+/* Streak at risk (not ticked yet today): a few pulses to nudge you, then it stops (3 iterations, not infinite). */
+.streak-badge[data-risk="true"][data-tier]:not([data-tier="legend"]) { animation: risk-pulse 1.2s ease-out 3; }
+
+/* One-shot glow when a tick extends the streak: bright at once, fully faded in 600ms. Color by level. */
+.streak-flash {
+  --glow: oklch(0.72 0.19 55);
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  /* inset: the card clips (overflow-hidden), so the glow is drawn inside its edge */
+  box-shadow: inset 0 0 0 1.5px var(--glow), inset 0 0 26px -4px var(--glow);
+  animation: flash-out 600ms ease-out both;
+}
+.streak-flash[data-tier="spark"] { --glow: oklch(0.7 0.1 70); }
+.streak-flash[data-tier="blaze"] { --glow: oklch(0.65 0.23 30); }
+.streak-flash[data-tier="legend"] { --glow: #ff6ba8; }
+@keyframes flash-out { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes flicker {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1, 1.2) rotate(-4deg); }
+  55% { transform: scale(0.96, 1.05) rotate(3deg); }
+  80% { transform: scale(1.06, 1.14) rotate(-2deg); }
+}
+@keyframes shimmer { to { background-position: -300% 0; } }
+@keyframes risk-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--flame) 50%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 8px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .streak-badge, .streak-badge svg, .streak-flash { animation: none !important; }
+  .streak-flash { display: none; }
+}
+
+/* ---- Activity heatmap (GitHub-style) ---- */
+.heat-cell { background: var(--muted); }
+.heat-cell[data-level="1"] { background: color-mix(in oklab, var(--primary) 30%, var(--muted)); }
+.heat-cell[data-level="2"] { background: color-mix(in oklab, var(--primary) 55%, var(--muted)); }
+.heat-cell[data-level="3"] { background: color-mix(in oklab, var(--primary) 78%, var(--muted)); }
+.heat-cell[data-level="4"] { background: var(--primary); }
+.heat-cell[data-future="true"] { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent); }
+.heat-cell[data-today="true"] { box-shadow: 0 0 0 1.5px var(--background), 0 0 0 3px var(--primary); }
+@keyframes heat-in { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: none; } }
+.heat-in { animation: heat-in 420ms var(--ease-spring) both; animation-delay: calc(var(--c, 0) * 9ms); }
+@media (prefers-reduced-motion: reduce) {
+  .heat-in { animation: fade-only 200ms ease-out both; animation-delay: 0ms; }
+}
+
+/* We draw our own show/hide eye on password fields; hide the browser's built-in one (Edge/IE). */
+input::-ms-reveal, input::-ms-clear { display: none; }

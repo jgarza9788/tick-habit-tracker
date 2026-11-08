@@ -11,4 +11,8 @@ export default defineConfig({
       "@": resolve(import.meta.dirname, "./src"),
     },
   },
+  server: {
+    // `npm run dev` + `npm run server` in another terminal.
+    proxy: { "/api": "http://localhost:3000" },
+  },
 })

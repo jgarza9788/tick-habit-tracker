@@ -1,0 +1,15 @@
+services:
+  tick:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - tick-data:/data
+    restart: unless-stopped
+    # Optional: create the account at startup instead of on first visit.
+    # environment:
+    #   TICK_USERNAME: you
+    #   TICK_PASSWORD: change-me-please
+
+volumes:
+  tick-data:
