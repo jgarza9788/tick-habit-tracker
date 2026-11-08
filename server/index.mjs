@@ -140,6 +140,7 @@ const rateLimited = (ip) => {
   return f.count >= MAX_FAILS
 }
 const recordFail = (ip) => {
+  if (fails.size > 1000) for (const [k, v] of fails) if (Date.now() - v.since > FAIL_WINDOW_MS) fails.delete(k)
   const f = fails.get(ip)
   if (!f || Date.now() - f.since > FAIL_WINDOW_MS) fails.set(ip, { count: 1, since: Date.now() })
   else f.count++
@@ -334,8 +335,10 @@ const server = http.createServer(async (req, res) => {
     )
     // CSRF defense in depth (the session cookie is also SameSite=Strict): reject cross-origin writes.
     if (req.method !== "GET" && req.method !== "HEAD" && req.headers.origin) {
+      // Behind a reverse proxy the Host header may be rewritten (nginx default), so also accept X-Forwarded-Host.
+      const hosts = [req.headers.host, String(req.headers["x-forwarded-host"] || "").split(",")[0].trim()].filter(Boolean)
       let sameOrigin = false
-      try { sameOrigin = new URL(req.headers.origin).host === req.headers.host } catch {}
+      try { sameOrigin = hosts.includes(new URL(req.headers.origin).host) } catch {}
       if (!sameOrigin) return send(res, 403, { error: "Cross-origin request blocked" })
     }
     if (url.pathname.startsWith("/api/")) return await api(req, res, url)

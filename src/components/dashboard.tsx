@@ -1,18 +1,8 @@
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
 import { Heatmap } from "@/components/heatmap"
 import { AnimatedNumber, GrowProgress } from "@/components/motion"
 import { tierFor } from "@/lib/streaks"
 import { fmt, lastDays, rate, streak, type Habit } from "@/lib/habits"
-
-const chartConfig = { done: { label: "Completed", color: "var(--primary)" } } satisfies ChartConfig
 
 const pct = (r: number | null) => (r === null ? "–" : `${Math.round(r * 100)}%`)
 
@@ -42,18 +32,6 @@ export function Dashboard({ habits, today }: { habits: Habit[]; today: Date }) {
   const weekRate = rate(habits, week)
   const totalTicks = habits.reduce((sum, h) => sum + Object.keys(h.days).length, 0)
 
-  // Short chart: label every integer when there are few habits, else just 0 / middle / max.
-  const yMax = Math.max(habits.length, 1)
-  const yTicks = yMax <= 4 ? Array.from({ length: yMax + 1 }, (_, i) => i) : [0, Math.ceil(yMax / 2), yMax]
-
-  const series = lastDays(today, 14).map((d) => {
-    const key = fmt(d)
-    return {
-      label: String(d.getDate()),
-      done: habits.filter((h) => h.days[key]).length,
-    }
-  })
-
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
@@ -63,27 +41,9 @@ export function Dashboard({ habits, today }: { habits: Habit[]; today: Date }) {
         <Stat index={3} title="Total ticks" value={<AnimatedNumber value={totalTicks} />} hint="all time" />
       </div>
 
-      <Card className="rise-in" style={{ "--i": 4 } as React.CSSProperties}>
-        <CardHeader>
-          <CardTitle>Last 14 days</CardTitle>
-          <CardDescription>Habits completed per day</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig} className="h-28 w-full">
-            <BarChart data={series} margin={{ top: 8, left: -24, right: 4 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} tickMargin={6} fontSize={11} />
-              <YAxis allowDecimals={false} domain={[0, yMax]} ticks={yTicks} interval={0} tickLine={false} axisLine={false} width={40} fontSize={11} />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-              <Bar dataKey="done" fill="var(--color-done)" radius={6} animationDuration={1650} animationEasing="ease-out" />
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+      <Heatmap habits={habits} today={today} className="rise-in" style={{ "--i": 4 } as React.CSSProperties} />
 
-      <Heatmap habits={habits} today={today} className="rise-in" style={{ "--i": 5 } as React.CSSProperties} />
-
-      <Card className="rise-in" style={{ "--i": 6 } as React.CSSProperties}>
+      <Card className="rise-in" style={{ "--i": 5 } as React.CSSProperties}>
         <CardHeader>
           <CardTitle>This week by habit</CardTitle>
           <CardDescription>Completion over the last 7 days</CardDescription>

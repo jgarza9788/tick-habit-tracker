@@ -172,7 +172,7 @@
 @keyframes circle-pop { from { transform: scale(.82); } to { transform: none; } }
 @keyframes fade-only { from { opacity: 0; } to { opacity: 1; } }
 
-.rise-in { animation: rise-in 620ms var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 55ms); }
+.rise-in { animation: rise-in 620ms var(--ease-spring) both; animation-delay: calc(min(var(--i, 0), 8) * 55ms); }
 .pane-in { animation: pane-in 520ms var(--ease-spring) both; }
 .slide-next { animation: slide-next 520ms var(--ease-spring) both; }
 .slide-prev { animation: slide-prev 520ms var(--ease-spring) both; }
@@ -217,14 +217,15 @@
   border-color: transparent;
   background: linear-gradient(110deg, #f6c453, #ff6ba8, #8b7bff, #f6c453);
   background-size: 300% 100%;
-  animation: shimmer 3.2s linear infinite;
+  /* tick-pop too, so the badge still pops when the count goes up */
+  animation: tick-pop 560ms var(--ease-bounce) both, shimmer 3.2s linear infinite;
 }
 .streak-badge svg { transform-origin: 50% 90%; }
 .streak-badge[data-tier="warm"] svg { animation: flicker 2s ease-in-out infinite; }
 .streak-badge[data-tier="hot"] svg { animation: flicker 1.5s ease-in-out infinite; }
 .streak-badge[data-tier="blaze"] svg, .streak-badge[data-tier="legend"] svg { animation: flicker 1.1s ease-in-out infinite; }
 /* Streak at risk (not ticked yet today): a few pulses to nudge you, then it stops (3 iterations, not infinite). */
-.streak-badge[data-risk="true"][data-tier]:not([data-tier="legend"]) { animation: risk-pulse 1.2s ease-out 3; }
+.streak-badge[data-risk="true"][data-tier]:not([data-tier="legend"]) { animation: tick-pop 560ms var(--ease-bounce) both, risk-pulse 1.2s ease-out 3; }
 
 /* One-shot glow when a tick extends the streak: bright at once, fully faded in 600ms. Color by level. */
 .streak-flash {
@@ -234,9 +235,12 @@
   box-shadow: inset 0 0 0 1.5px var(--glow), inset 0 0 26px -4px var(--glow);
   animation: flash-out 600ms ease-out both;
 }
-.streak-flash[data-tier="spark"] { --glow: oklch(0.7 0.1 70); }
-.streak-flash[data-tier="blaze"] { --glow: oklch(0.65 0.23 30); }
-.streak-flash[data-tier="legend"] { --glow: #ff6ba8; }
+/* Scales with the level: longer and stronger as the streak grows. */
+.streak-flash[data-tier="spark"] { --glow: oklch(0.7 0.1 70); animation-duration: 450ms; }
+.streak-flash[data-tier="warm"] { animation-duration: 550ms; }
+.streak-flash[data-tier="hot"] { animation-duration: 650ms; box-shadow: inset 0 0 0 2px var(--glow), inset 0 0 30px -4px var(--glow); }
+.streak-flash[data-tier="blaze"] { --glow: oklch(0.65 0.23 30); animation-duration: 750ms; box-shadow: inset 0 0 0 2px var(--glow), inset 0 0 34px -2px var(--glow); }
+.streak-flash[data-tier="legend"] { --glow: #ff6ba8; animation-duration: 900ms; box-shadow: inset 0 0 0 2.5px var(--glow), inset 0 0 40px 0 var(--glow); }
 @keyframes flash-out { from { opacity: 1; } to { opacity: 0; } }
 
 @keyframes flicker {
@@ -271,3 +275,122 @@
 
 /* We draw our own show/hide eye on password fields; hide the browser's built-in one (Edge/IE). */
 input::-ms-reveal, input::-ms-clear { display: none; }
+
+/* ---- Accent colors (picked with the palette button; see src/lib/accents.ts) ---- */
+:root[data-accent="green"] {
+  --primary: oklch(0.62 0.17 150);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.62 0.17 150);
+  --chart-1: oklch(0.62 0.17 150);
+  --background: oklch(0.975 0.003 150);
+}
+:root[data-accent="blue"] {
+  --primary: oklch(0.58 0.19 255);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.58 0.19 255);
+  --chart-1: oklch(0.58 0.19 255);
+  --background: oklch(0.975 0.003 255);
+}
+:root[data-accent="violet"] {
+  --primary: oklch(0.56 0.22 295);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.56 0.22 295);
+  --chart-1: oklch(0.56 0.22 295);
+  --background: oklch(0.975 0.003 295);
+}
+:root[data-accent="pink"] {
+  --primary: oklch(0.62 0.22 355);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.62 0.22 355);
+  --chart-1: oklch(0.62 0.22 355);
+  --background: oklch(0.975 0.003 355);
+}
+:root[data-accent="orange"] {
+  --primary: oklch(0.64 0.19 50);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.64 0.19 50);
+  --chart-1: oklch(0.64 0.19 50);
+  --background: oklch(0.975 0.003 50);
+}
+:root[data-accent="red"] {
+  --primary: oklch(0.58 0.22 25);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.58 0.22 25);
+  --chart-1: oklch(0.58 0.22 25);
+  --background: oklch(0.975 0.003 25);
+}
+.dark[data-accent="green"] {
+  --primary: oklch(0.74 0.18 150);
+  --primary-foreground: oklch(0.16 0.03 150);
+  --ring: oklch(0.74 0.18 150);
+  --chart-1: oklch(0.74 0.18 150);
+  --background: oklch(0.14 0.008 150);
+  --card: oklch(0.19 0.01 150);
+}
+.dark[data-accent="blue"] {
+  --primary: oklch(0.75 0.15 255);
+  --primary-foreground: oklch(0.16 0.03 255);
+  --ring: oklch(0.75 0.15 255);
+  --chart-1: oklch(0.75 0.15 255);
+  --background: oklch(0.14 0.008 255);
+  --card: oklch(0.19 0.01 255);
+}
+.dark[data-accent="violet"] {
+  --primary: oklch(0.74 0.17 295);
+  --primary-foreground: oklch(0.16 0.03 295);
+  --ring: oklch(0.74 0.17 295);
+  --chart-1: oklch(0.74 0.17 295);
+  --background: oklch(0.14 0.008 295);
+  --card: oklch(0.19 0.01 295);
+}
+.dark[data-accent="pink"] {
+  --primary: oklch(0.76 0.16 355);
+  --primary-foreground: oklch(0.16 0.03 355);
+  --ring: oklch(0.76 0.16 355);
+  --chart-1: oklch(0.76 0.16 355);
+  --background: oklch(0.14 0.008 355);
+  --card: oklch(0.19 0.01 355);
+}
+.dark[data-accent="orange"] {
+  --primary: oklch(0.78 0.16 50);
+  --primary-foreground: oklch(0.16 0.03 50);
+  --ring: oklch(0.78 0.16 50);
+  --chart-1: oklch(0.78 0.16 50);
+  --background: oklch(0.14 0.008 50);
+  --card: oklch(0.19 0.01 50);
+}
+.dark[data-accent="red"] {
+  --primary: oklch(0.72 0.18 25);
+  --primary-foreground: oklch(0.16 0.03 25);
+  --ring: oklch(0.72 0.18 25);
+  --chart-1: oklch(0.72 0.18 25);
+  --background: oklch(0.14 0.008 25);
+  --card: oklch(0.19 0.01 25);
+}
+
+:root[data-accent="teal"] {
+  --primary: oklch(0.6 0.12 195);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.6 0.12 195);
+  --chart-1: oklch(0.6 0.12 195);
+  --background: oklch(0.975 0.003 195);
+}
+.dark[data-accent="teal"] {
+  --primary: oklch(0.78 0.12 195);
+  --primary-foreground: oklch(0.16 0.03 195);
+  --ring: oklch(0.78 0.12 195);
+  --chart-1: oklch(0.78 0.12 195);
+  --background: oklch(0.14 0.008 195);
+  --card: oklch(0.19 0.01 195);
+}
+
+/* ---- Light mode: make container edges visible against the near-white page ---- */
+:root:not(.dark) {
+  --border: oklch(0.88 0.004 260);
+  --input: oklch(0.86 0.004 260);
+}
+/* Cards: a firmer ring plus a soft lift (Tailwind's ring utility composes --tw-ring-color and --tw-shadow). */
+:root:not(.dark) [data-slot="card"] {
+  --tw-ring-color: color-mix(in oklch, var(--foreground) 15%, transparent);
+  --tw-shadow: 0 1px 2px oklch(0 0 0 / 0.05), 0 8px 20px -12px oklch(0 0 0 / 0.14);
+}

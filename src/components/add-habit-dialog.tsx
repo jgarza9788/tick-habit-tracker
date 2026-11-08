@@ -11,27 +11,22 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-
-const EMOJIS = ["💧", "📚", "🏃", "🧘", "🥗", "😴", "✍️", "🎸"]
 
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onAdd: (name: string, emoji: string) => void
+  onAdd: (name: string) => void
 }
 
 export function AddHabitDialog({ open, onOpenChange, onAdd }: Props) {
   const [name, setName] = useState("")
-  const [emoji, setEmoji] = useState("")
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
-    onAdd(trimmed, emoji)
+    onAdd(trimmed)
     setName("")
-    setEmoji("")
     onOpenChange(false)
   }
 
@@ -41,7 +36,7 @@ export function AddHabitDialog({ open, onOpenChange, onAdd }: Props) {
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>New habit</DialogTitle>
-            <DialogDescription>What do you want to do every day?</DialogDescription>
+            <DialogDescription>What do you want to do every day? Tip: start the name with an emoji.</DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
@@ -50,27 +45,12 @@ export function AddHabitDialog({ open, onOpenChange, onAdd }: Props) {
                 id="habit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Read 20 pages"
+                placeholder="📚 Read 20 pages"
                 maxLength={60}
                 autoComplete="off"
                 autoFocus
                 required
               />
-            </Field>
-            <Field>
-              <FieldLabel>Icon (optional)</FieldLabel>
-              <ToggleGroup
-                variant="outline"
-                className="flex-wrap"
-                value={emoji ? [emoji] : []}
-                onValueChange={(v) => setEmoji(v[0] ?? "")}
-              >
-                {EMOJIS.map((e) => (
-                  <ToggleGroupItem key={e} value={e} aria-label={`Icon ${e}`}>
-                    {e}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
             </Field>
           </FieldGroup>
           <DialogFooter>

@@ -11,7 +11,7 @@ const TIERS: { id: TierId; min: number; name: string }[] = [
 
 export const tierFor = (n: number) => TIERS.find((t) => n >= t.min) ?? { id: "none" as TierId, min: 0, name: "" }
 
-export const MILESTONES = [3, 7, 14, 30, 60, 100]
+export const MILESTONES = [3, 7, 14, 30, 60, 100, 150, 200, 365]
 
 export const nextMilestone = (n: number) => MILESTONES.find((m) => m > n) ?? null
 export const prevMilestone = (n: number) => [...MILESTONES].reverse().find((m) => m <= n) ?? 0
@@ -23,4 +23,7 @@ export const MILESTONE_COPY: Record<number, { title: string; body: string }> = {
   30: { title: "A whole month! 👑", body: "30 days. Legendary." },
   60: { title: "60 days 🚀", body: "Two months. Nothing can stop you now." },
   100: { title: "100 days!!! 🏆", body: "Triple digits. Absolute legend." },
+  150: { title: "150 days 🌟", body: "Five months strong. You make it look easy." },
+  200: { title: "200 days!! 💎", body: "Two hundred days. Unbreakable." },
+  365: { title: "ONE YEAR! 👑🏆", body: "365 days in a row. A full year. Legendary." },
 }
