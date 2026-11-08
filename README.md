@@ -38,7 +38,9 @@ docker run -d --name tick -p 3000:3000 -v tick-data:/data --restart unless-stopp
 | Data location | `TICK_DATA` env var or `.env` file. A volume name or a host path such as `./data` | named volume `tick-data` |
 | Pre-create the account | uncomment `TICK_USERNAME` / `TICK_PASSWORD` in `docker-compose.yml` | created on first visit |
 
-A bind-mounted data folder must be writable by the container's `node` user (uid 1000).
+The container fixes ownership of `/data` on start, so bind mounts and NAS shares work without a manual `chown`
+(`EACCES ... /data/secret.key` on an older image means you need v0.1.1 or later). To run as a specific user instead, add
+`user: "1000:1000"` to the service, and make sure that user can write to the folder.
 
 ### Updating
 
