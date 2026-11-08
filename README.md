@@ -2,6 +2,8 @@
 
 A habit tracker. React + shadcn/ui front end, tiny dependency-free Node server, data in a JSON file.
 
+![Tick on desktop, light mode](docs/desktop-light.png)
+
 - **Habits view:** 5-day window (2 days back, today, 2 ahead) or a full week; page through time with the arrows.
 - **Dashboard:** today's progress, best streak, 7-day completion rate, total ticks, activity heatmap, per-habit weekly bars.
 - Responsive: tabs on phones, side-by-side on desktop. Light/dark.
@@ -10,11 +12,46 @@ A habit tracker. React + shadcn/ui front end, tiny dependency-free Node server, 
 
 ## Run with Docker
 
+A prebuilt image is published to GitHub Container Registry on every release
+(`ghcr.io/jgarza9788/tick-habit-tracker`), so you don't need to clone or build anything.
+
+1. Save [`docker-compose.yml`](docker-compose.yml) somewhere (or clone this repo).
+2. Start it:
+
+   ```
+   docker compose up -d
+   ```
+
+3. Open http://localhost:3000 and create your account on first visit.
+
+Or without compose:
+
 ```
-docker compose up --build
+docker run -d --name tick -p 3000:3000 -v tick-data:/data --restart unless-stopped   ghcr.io/jgarza9788/tick-habit-tracker:latest
 ```
 
-Open http://localhost:3000. Data persists in the `tick-data` volume.
+### Configuration
+
+| Setting | How | Default |
+|---|---|---|
+| Port | change the left side of `"3000:3000"` in `docker-compose.yml` | `3000` |
+| Data location | `TICK_DATA` env var or `.env` file. A volume name or a host path such as `./data` | named volume `tick-data` |
+| Pre-create the account | uncomment `TICK_USERNAME` / `TICK_PASSWORD` in `docker-compose.yml` | created on first visit |
+
+A bind-mounted data folder must be writable by the container's `node` user (uid 1000).
+
+### Updating
+
+```
+docker compose pull && docker compose up -d
+```
+
+Your data lives in the volume, so it survives updates. Releases are tagged `vX.Y.Z`; the image is
+published as `X.Y.Z`, `X.Y` and `latest`. To pin a version, edit the tag in `docker-compose.yml`.
+
+### Build from source
+
+Comment out `image:` and uncomment `build: .` in `docker-compose.yml`, then `docker compose up --build`.
 
 ## Run on Windows (no Docker)
 
@@ -27,6 +64,21 @@ Requires Node.js 20+.
 ```
 
 Data is stored in `.\data\habits.json` (change with `-DataDir`).
+
+## Screenshots
+
+| Dark mode | Phone |
+|---|---|
+| ![Dark mode](docs/desktop-dark.png) | ![Mobile](docs/mobile.png) |
+
+## Using Tick
+
+- **Add a habit:** the green **Add habit** button; pick an emoji and a name.
+- **Tick a day:** click the circle for that day. Click again to undo. You can fill in past days and tick ahead.
+- **Move through time:** the arrows next to the week label page back and forward.
+- **Dashboard:** today's progress, streaks, completion rate, the activity heatmap and per-habit weekly bars. On phones it's the second tab.
+- **Theme and color:** the moon button toggles light/dark, the palette button changes the accent color.
+- **Delete a habit:** the trash icon on its card.
 
 ## Streak celebrations
 
@@ -65,6 +117,16 @@ Tick has a single username + password account.
   rate limit then applies to the proxy's address, i.e. all visitors share it.
 - **Forgot the password?** Stop Tick and delete `auth.json` from the data folder (Docker: `docker compose exec tick rm /data/auth.json`,
   then restart). Your habits are untouched; you'll be asked to create the account again. Deleting `secret.key` signs everyone out.
+
+## Releasing
+
+Bump `version` in `package.json`, commit, then tag and push:
+
+```
+git tag vX.Y.Z && git push origin vX.Y.Z
+```
+
+The `Docker build` workflow publishes the image to GHCR for any `v*` tag. Update the tag in `docker-compose.yml` to match.
 
 ## Develop
 
