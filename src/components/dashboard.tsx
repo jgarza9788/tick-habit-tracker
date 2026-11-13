@@ -1,12 +1,15 @@
+import { ChevronRightIcon } from "lucide-react"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Heatmap } from "@/components/heatmap"
 import { AnimatedNumber, GrowProgress } from "@/components/motion"
+import { habitHref } from "@/lib/route"
 import { tierFor } from "@/lib/streaks"
 import { fmt, lastDays, rate, streak, type Habit } from "@/lib/habits"
 
 const pct = (r: number | null) => (r === null ? "–" : `${Math.round(r * 100)}%`)
 
-function Stat({ title, value, hint, index }: { title: string; value: React.ReactNode; hint: string; index: number }) {
+export function Stat({ title, value, hint, index }: { title: string; value: React.ReactNode; hint: string; index: number }) {
   return (
     <Card size="sm" className="rise-in" style={{ "--i": index } as React.CSSProperties}>
       <CardHeader>
@@ -46,22 +49,32 @@ export function Dashboard({ habits, today }: { habits: Habit[]; today: Date }) {
       <Card className="rise-in" style={{ "--i": 5 } as React.CSSProperties}>
         <CardHeader>
           <CardTitle>This week by habit</CardTitle>
-          <CardDescription>Completion over the last 7 days</CardDescription>
+          <CardDescription>Completion over the last 7 days · tap a habit for its details</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-2.5">
           {habits.map((h) => {
             const r = rate([h], week)
             const done = week.filter((d) => h.days[fmt(d)]).length
             return (
-              <div key={h.id} className="flex flex-col gap-1.5">
-                <div className="flex items-baseline justify-between gap-2 text-sm">
+              <a
+                key={h.id}
+                href={habitHref(h.id)}
+                title={`Open ${h.name}`}
+                className="group press flex flex-col gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 shadow-xs outline-none transition-colors hover:border-primary/50 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <div className="flex items-center justify-between gap-2 text-sm">
                   <span className="truncate font-medium">
                     {h.emoji} {h.name}
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{done}/7 · {pct(r)}</span>
+                  <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground tabular-nums">
+                    {done}/7 · {pct(r)}
+                    <span className="ml-1 grid size-6 place-items-center rounded-full bg-background text-foreground ring-1 ring-border transition-colors group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary">
+                      <ChevronRightIcon className="size-4" aria-hidden="true" />
+                    </span>
+                  </span>
                 </div>
                 <GrowProgress value={Math.round((r ?? 0) * 100)} aria-label={`${h.name} weekly completion`} />
-              </div>
+              </a>
             )
           })}
         </CardContent>

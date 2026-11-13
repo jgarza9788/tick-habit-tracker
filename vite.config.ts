@@ -1,7 +1,7 @@
 import { resolve } from "node:path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { defineConfig } from "vitest/config"
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,6 +11,7 @@ export default defineConfig({
       "@": resolve(import.meta.dirname, "./src"),
     },
   },
+  test: { include: ["src/**/*.test.ts"] },
   server: {
     // `npm run dev` + `npm run server` in another terminal.
     proxy: { "/api": "http://localhost:3000" },

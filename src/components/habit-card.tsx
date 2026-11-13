@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CheckIcon, FlameIcon, PencilIcon, Trash2Icon } from "lucide-react"
+import { ArchiveIcon, CheckIcon, ChevronDownIcon, ChevronUpIcon, FlameIcon, PencilIcon, Trash2Icon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,9 +21,14 @@ type Props = {
   onToggle: (habit: Habit, key: string, done: boolean, origin: { x: number; y: number }) => void
   onRename: (habit: Habit) => void
   onDelete: (habit: Habit) => void
+  onArchive: (habit: Habit) => void
+  /** Move one place up (-1) or down (1) among the visible habits. */
+  onMove: (habit: Habit, dir: -1 | 1) => void
+  canMoveUp: boolean
+  canMoveDown: boolean
 }
 
-export function HabitCard({ habit, days, today, index, slide, leaving, onToggle, onRename, onDelete }: Props) {
+export function HabitCard({ habit, days, today, index, slide, leaving, onToggle, onRename, onDelete, onArchive, onMove, canMoveUp, canMoveDown }: Props) {
   const todayKey = fmt(today)
   const s = streak(habit, today)
   const tier = tierFor(s)
@@ -62,8 +67,22 @@ export function HabitCard({ habit, days, today, index, slide, leaving, onToggle,
                 )}
               </CardTitle>
               <CardAction className="flex items-center">
+                {/* Keyboard / screen-reader reordering. Mouse and touch users press-and-hold and drag instead. */}
+                {(canMoveUp || canMoveDown) && (
+                  <>
+                    <Button variant="ghost" size="icon-sm" className="sr-only focus-visible:not-sr-only" aria-label={`Move ${habit.name} up`} disabled={!canMoveUp} onClick={() => onMove(habit, -1)}>
+                      <ChevronUpIcon />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" className="sr-only focus-visible:not-sr-only" aria-label={`Move ${habit.name} down`} disabled={!canMoveDown} onClick={() => onMove(habit, 1)}>
+                      <ChevronDownIcon />
+                    </Button>
+                  </>
+                )}
                 <Button variant="ghost" size="icon" aria-label={`Rename ${habit.name}`} onClick={() => onRename(habit)}>
                   <PencilIcon />
+                </Button>
+                <Button variant="ghost" size="icon" aria-label={`Archive ${habit.name}`} title="Archive (keeps history)" onClick={() => onArchive(habit)}>
+                  <ArchiveIcon />
                 </Button>
                 <Button variant="ghost" size="icon" aria-label={`Delete ${habit.name}`} onClick={() => onDelete(habit)}>
                   <Trash2Icon />
@@ -104,7 +123,7 @@ export function HabitCard({ habit, days, today, index, slide, leaving, onToggle,
                     >
                       <span
                         className={cn(
-                          "text-[10px] font-medium tracking-wide uppercase transition-colors",
+                          "text-[11px] font-medium tracking-wide uppercase transition-colors",
                           isToday ? "text-primary" : "text-muted-foreground"
                         )}
                       >
@@ -116,7 +135,7 @@ export function HabitCard({ habit, days, today, index, slide, leaving, onToggle,
                           done && "bg-primary text-primary-foreground",
                           !done && !future && "bg-muted text-muted-foreground",
                           !done && isToday && "ring-2 ring-primary",
-                          future && "border border-dashed border-border text-muted-foreground/60",
+                          future && "border border-dashed border-border text-muted-foreground",
                           justTicked && "circle-pop"
                         )}
                       >

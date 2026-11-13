@@ -19,13 +19,39 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 
 export type AuthStatus = { needsSetup: boolean; authenticated: boolean; username: string | null }
 
+// Day toggles are sent one at a time per habit+date so they reach the server in click order.
+const dayQueue = new Map<string, { tail: Promise<unknown>; pending: number }>()
+
+function queueDay(id: string, date: string, done: boolean): Promise<Habit | undefined> {
+  const key = `${id}:${date}`
+  const q = dayQueue.get(key) ?? { tail: Promise.resolve(), pending: 0 }
+  dayQueue.set(key, q)
+  q.pending++
+  const run = q.tail.then(
+    () => request<Habit>("PUT", `/api/habits/${id}/days/${date}`, { done }),
+    () => request<Habit>("PUT", `/api/habits/${id}/days/${date}`, { done })
+  )
+  q.tail = run.catch(() => undefined)
+  return run
+    .catch((e) => {
+      // A newer toggle for this day is still queued and will settle the final state, so don't report this failure.
+      if (q.pending > 1) return undefined
+      throw e
+    })
+    .finally(() => {
+      if (--q.pending === 0) dayQueue.delete(key)
+    })
+}
+
 export const api = {
   list: () => request<{ habits: Habit[] }>("GET", "/api/habits").then((r) => r.habits),
   create: (name: string, createdAt: string) => request<Habit>("POST", "/api/habits", { name, createdAt }),
   rename: (id: string, name: string) => request<Habit>("PATCH", `/api/habits/${id}`, { name, emoji: "" }),
+  update: (id: string, patch: { archived?: boolean; note?: string }) => request<Habit>("PATCH", `/api/habits/${id}`, patch),
+  reorder: (ids: string[]) => request<{ habits: Habit[] }>("PUT", "/api/habits/order", { ids }),
   remove: (id: string) => request<void>("DELETE", `/api/habits/${id}`),
-  setDay: (id: string, date: string, done: boolean) =>
-    request<Habit>("PUT", `/api/habits/${id}/days/${date}`, { done }),
+  setDay: queueDay,
+  importData: (data: unknown) => request<{ habits: Habit[] }>("POST", "/api/import", data).then((r) => r.habits),
 }
 
 export const auth = {
@@ -35,4 +61,6 @@ export const auth = {
   login: (username: string, password: string) =>
     request<{ username: string }>("POST", "/api/auth/login", { username, password }),
   logout: () => request<void>("POST", "/api/auth/logout", {}),
+  changePassword: (current: string, next: string) =>
+    request<{ username: string }>("POST", "/api/auth/password", { current, next }),
 }

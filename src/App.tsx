@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { ChevronLeftIcon, ChevronRightIcon, LogOutIcon, MoonIcon, PlusIcon, SunIcon } from "lucide-react"
+import { ChevronLeftIcon, ChevronRightIcon, MoonIcon, PlusIcon, SunIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { AccentPicker } from "@/components/accent-picker"
+import { AccountMenu } from "@/components/account-menu"
 import { AddHabitDialog } from "@/components/add-habit-dialog"
+import { ArchivedHabits } from "@/components/archived-habits"
+import { HabitDetail } from "@/components/habit-detail"
+import { BackupButtons } from "@/components/backup-buttons"
 import { Dashboard } from "@/components/dashboard"
 import { HabitCard, type Slide } from "@/components/habit-card"
 import { Logo } from "@/components/logo"
@@ -22,13 +26,18 @@ import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { burst } from "@/components/burst"
-import { celebrate } from "@/components/celebrate"
-import { api, auth } from "@/lib/api"
+import { api } from "@/lib/api"
 import { addDays, fmt, startOfDay, startOfWeek, streak, type Habit } from "@/lib/habits"
+import { useHabitRoute } from "@/lib/route"
+import { useLongPressReorder } from "@/lib/use-long-press-reorder"
 import { MILESTONE_COPY, MILESTONES } from "@/lib/streaks"
 import { cn } from "@/lib/utils"
 
 type View = "today" | "dashboard"
+
+// The full-screen milestone effects are big and rarely needed, so they load as a separate chunk (prefetched when idle).
+const loadCelebrate = () => import("@/components/celebrate")
+const celebrate = (days: number) => void loadCelebrate().then((m) => m.celebrate(days))
 
 /** Current local day; re-evaluates at midnight and when the tab regains focus. */
 function useToday() {
@@ -51,6 +60,9 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
   const today = useToday()
   const { setTheme } = useTheme()
   const [habits, setHabits] = useState<Habit[] | null>(null)
+  const routeId = useHabitRoute()
+  const active = useMemo(() => habits?.filter((h) => !h.archived) ?? [], [habits])
+  const archived = useMemo(() => habits?.filter((h) => h.archived) ?? [], [habits])
   const [loadError, setLoadError] = useState(false)
   const [page, setPage] = useState(0)
   const [slide, setSlide] = useState<Slide>({ id: 0, dir: null })
@@ -68,6 +80,10 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
   }, [])
   useEffect(() => {
     api.list().then(setHabits).catch(() => setLoadError(true))
+  }, [])
+  useEffect(() => {
+    const id = window.setTimeout(() => void loadCelebrate().catch(() => {}), 3000)
+    return () => window.clearTimeout(id)
   }, [])
 
   // One Monday-based week at a time; `page` pages through weeks (0 = this week).
@@ -131,6 +147,50 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
     })
   }
 
+  const setArchived = (h: Habit, value: boolean) => {
+    setHabits((hs) => hs?.map((x) => (x.id === h.id ? { ...x, archived: value } : x)) ?? null)
+    api.update(h.id, { archived: value }).catch((e: Error) => {
+      toast.error(value ? "Couldn't archive habit" : "Couldn't restore habit", { description: e.message })
+      load()
+    })
+  }
+  const archive = (h: Habit) => {
+    setArchived(h, true)
+    toast(`Archived “${h.name}”`, { description: "Its history is kept.", action: { label: "Undo", onClick: () => setArchived(h, false) } })
+  }
+
+  // Put a visible habit at a new position among the visible ones; archived habits keep their slots.
+  const moveTo = (id: string, to: number) => {
+    if (!habits) return
+    const order = active.map((h) => h.id)
+    const from = order.indexOf(id)
+    if (from < 0 || to < 0 || to >= order.length || from === to) return
+    order.splice(from, 1)
+    order.splice(to, 0, id)
+    const byId = new Map(habits.map((h) => [h.id, h]))
+    let k = 0
+    const next = habits.map((h) => (h.archived ? h : byId.get(order[k++])!))
+    setHabits(next)
+    api.reorder(next.map((x) => x.id)).catch((e: Error) => {
+      toast.error("Couldn't save the new order", { description: e.message })
+      load()
+    })
+  }
+  // Keyboard / screen-reader alternative to dragging: the (visually hidden until focused) up/down buttons.
+  const move = (h: Habit, dir: -1 | 1) => moveTo(h.id, active.findIndex((x) => x.id === h.id) + dir)
+  const reorder = useLongPressReorder(
+    active.map((h) => h.id),
+    moveTo
+  )
+
+  const saveNote = (h: Habit, note: string) => {
+    setHabits((hs) => hs?.map((x) => (x.id === h.id ? { ...x, note } : x)) ?? null)
+    api.update(h.id, { note }).catch((e: Error) => {
+      toast.error("Couldn't save the note", { description: e.message })
+      load()
+    })
+  }
+
   // Collapse the card first, then drop it from state once the animation has finished.
   const remove = (h: Habit) => {
     setDeleting(null)
@@ -169,15 +229,8 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
           <span className="text-xl font-semibold tracking-tight">Tick</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon-lg"
-            onClick={() => auth.logout().finally(onLogout)}
-            aria-label={`Sign out ${username}`}
-            title={`Sign out (${username})`}
-          >
-            <LogOutIcon />
-          </Button>
+          <BackupButtons onImported={setHabits} />
+          <AccountMenu username={username} onLogout={onLogout} />
           <AccentPicker />
           <Button variant="ghost" size="icon-lg" onClick={toggleTheme} aria-label="Toggle dark mode">
             <MoonIcon className="dark:hidden" />
@@ -220,6 +273,22 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
             </Button>
           </EmptyContent>
         </Empty>
+      ) : routeId ? (
+        habits.find((h) => h.id === routeId) ? (
+          <HabitDetail key={routeId} habit={habits.find((h) => h.id === routeId)!} today={today} onToggle={toggle} onNote={saveNote} />
+        ) : (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>Habit not found</EmptyTitle>
+              <EmptyDescription>It may have been deleted.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button variant="outline" render={<a href="#/" />}>
+                Back to habits
+              </Button>
+            </EmptyContent>
+          </Empty>
+        )
       ) : (
         <>
           {/* Phone: switch between the two panes. Desktop: both are always visible. */}
@@ -266,17 +335,24 @@ export function App({ username, onLogout }: { username: string; onLogout: () => 
                 </div>
               </div>
 
-              <div className="flex flex-col">
-                {habits.map((h, i) => (
-                  <HabitCard key={h.id} habit={h} days={days} today={today} index={i} slide={slide} leaving={leaving === h.id} onToggle={toggle} onRename={(x) => { setEditing(x); setEditOpen(true) }} onDelete={setDeleting} />
-                ))}
+              <div className="flex flex-col" onPointerDown={reorder.onPointerDown}>
+                {active.map((h, i) => {
+                  const st = reorder.itemState(h.id, i)
+                  return (
+                    <div key={h.id} data-habit-id={h.id} style={st.style} className={cn("rounded-xl", st.dragging && "shadow-2xl")}>
+                      <HabitCard habit={h} days={days} today={today} index={i} slide={slide} leaving={leaving === h.id} onToggle={toggle} onRename={(x) => { setEditing(x); setEditOpen(true) }} onDelete={setDeleting} onArchive={archive} onMove={move} canMoveUp={i > 0} canMoveDown={i < active.length - 1} />
+                    </div>
+                  )
+                })}
               </div>
+              {active.length > 1 && <p className="-mt-1 text-center text-xs text-muted-foreground">Press and hold a habit, then drag to reorder.</p>}
+              <ArchivedHabits habits={archived} onRestore={(h) => setArchived(h, false)} onDelete={setDeleting} />
             </section>
 
             <section className={cn("pane-in", view !== "dashboard" && "max-lg:hidden")} aria-label="Dashboard">
               <h2 className="mb-4 text-3xl font-semibold tracking-tight max-lg:hidden">Dashboard</h2>
               {/* Keyed by the phone tab so opening Dashboard replays its count-up and grow animations. */}
-              <Dashboard key={view} habits={habits} today={today} />
+              <Dashboard key={view} habits={active} today={today} />
             </section>
           </div>
         </>
